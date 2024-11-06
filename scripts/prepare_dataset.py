@@ -1,49 +1,59 @@
 import json
-import pandas as pd
 
-# 示例问题和答案
-questions = [
-    "What is the state of the cell in this image?",
-    "Is this cell in the mitosis phase?",
-]
-answers = ["Interphase", "Yes"]
-
-def prepare_dataset(encoded_images, questions, answers):
+def prepare_dataset(encoded_images):
     data = []
-    for image_name, encoded_image in encoded_images.items():
-        for question, answer in zip(questions, answers):
-            entry = {
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": "Use the image to answer the question."
-                    },
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": question},
-                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{encoded_image}"}}
-                        ]
-                    },
-                    {
-                        "role": "assistant",
-                        "content": [{"type": "text", "text": answer}]
-                    }
-                ]
-            }
-            data.append(entry)
+    for relative_path, encoded_image in encoded_images.items():
+        # Determine cell state and phase based on the path
+        if "interphase" in relative_path.lower():
+            answer = "The cell is in interphase."
+        elif "mitosis" in relative_path.lower():
+            if "prophase" in relative_path.lower():
+                answer = "The cell is in prophase."
+            elif "metaphase" in relative_path.lower():
+                answer = "The cell is in metaphase."
+            elif "anaphase" in relative_path.lower():
+                answer = "The cell is in anaphase."
+            elif "telophase" in relative_path.lower():
+                answer = "The cell is in telophase."
+            else:
+                answer = "The cell is in mitosis."
+        else:
+            answer = "Unknown cell state."
+
+        # Define the question and create the message structure
+        question = "What is the state of the cell in this image?"
+        entry = {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "Use the image to answer the question."
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": question},
+                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{encoded_image}"}}
+                    ]
+                },
+                {
+                    "role": "assistant",
+                    "content": [{"type": "text", "text": answer}]
+                }
+            ]
+        }
+        data.append(entry)
     return data
 
 if __name__ == "__main__":
-    # 从 Step 1 生成的 JSON 文件读取编码图像数据
-    with open("../data/encoded_images.json", "r") as f:
+    # Load encoded images from the JSON file created in encode_images.py
+    with open("encoded_images.json", "r") as f:
         encoded_images = json.load(f)
 
-    # 生成数据集
-    dataset = prepare_dataset(encoded_images, questions, answers)
+    # Generate dataset
+    dataset = prepare_dataset(encoded_images)
     
-    # 保存为 JSONL 文件
-    with open("../data/dataset.jsonl", "w") as f:
+    # Save as a JSONL file
+    with open("dataset.jsonl", "w") as f:
         for entry in dataset:
             json.dump(entry, f)
             f.write("\n")
