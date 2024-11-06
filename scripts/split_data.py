@@ -5,10 +5,8 @@ def split_dataset(input_file, train_file, val_file, test_file, train_ratio=0.8, 
     with open(input_file, "r") as f:
         data = [json.loads(line) for line in f]
 
-    # 打乱数据顺序
     random.shuffle(data)
 
-    # 计算每个数据集的大小
     total = len(data)
     train_size = int(total * train_ratio)
     val_size = int(total * val_ratio)
@@ -17,7 +15,6 @@ def split_dataset(input_file, train_file, val_file, test_file, train_ratio=0.8, 
     val_data = data[train_size:train_size + val_size]
     test_data = data[train_size + val_size:]
 
-    # 保存拆分后的数据
     with open(train_file, "w") as f:
         for entry in train_data:
             json.dump(entry, f)
@@ -34,10 +31,9 @@ def split_dataset(input_file, train_file, val_file, test_file, train_ratio=0.8, 
             f.write("\n")
 
 if __name__ == "__main__":
-    # 输入输出文件路径
-    input_file = "../data/dataset.jsonl"
-    train_file = "../data/train.jsonl"
-    val_file = "../data/val.jsonl"
-    test_file = "../data/test.jsonl"
+    input_file = "dataset.jsonl"
+    train_file = "data/train.jsonl"
+    val_file = "data/val.jsonl"
+    test_file = "data/test.jsonl"
 
     split_dataset(input_file, train_file, val_file, test_file)
