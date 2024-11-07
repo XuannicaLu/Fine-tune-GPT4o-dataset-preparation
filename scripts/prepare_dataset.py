@@ -1,3 +1,5 @@
+import json
+
 def prepare_dataset(encoded_images):
     data = []
     for relative_path, encoded_image in encoded_images.items():
@@ -48,3 +50,17 @@ def prepare_dataset(encoded_images):
         }
         data.append(entry)
     return data
+
+if __name__ == "__main__":
+    # Load encoded images from the JSON file created in encode_images.py
+    with open("encoded_images.json", "r") as f:
+        encoded_images = json.load(f)
+
+    # Generate dataset
+    dataset = prepare_dataset(encoded_images)
+    
+    # Save as a JSONL file
+    with open("data/dataset.jsonl", "w") as f:
+        for entry in dataset:
+            json.dump(entry, f)
+            f.write("\n")
