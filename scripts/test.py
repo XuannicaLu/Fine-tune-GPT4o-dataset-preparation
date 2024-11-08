@@ -2,7 +2,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import re
 
 test_data = []
-with open("ocr-vqa-test.jsonl", "r") as f:
+with open("test.jsonl", "r") as f:
     for line in f:
         test_data.append(json.loads(line))
 
@@ -11,7 +11,7 @@ def process_example(example, model):
         model=model,
         messages=example["messages"],
         store=True,
-        metadata={'dataset': 'ocr-vqa-test'}
+        metadata={'dataset': 'test'}
     )
     predicted_answer = response.choices[0].message.content.strip()
     
@@ -37,7 +37,7 @@ with ThreadPoolExecutor() as executor:
     for future in tqdm(as_completed(futures), total=len(futures)):
         results.append(future.result())
 
-with open("ocr-vqa-ft-results.jsonl", "w") as f:
+with open("ft-results.jsonl", "w") as f:
     for result in results:
         json.dump(result, f)
         f.write("\n")
