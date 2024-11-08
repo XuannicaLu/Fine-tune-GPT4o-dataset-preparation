@@ -1,26 +1,50 @@
-from collections import Counter
-from matplotlib import pyplot as plt
+import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import re
+from tqdm import tqdm
+from openai import OpenAI
 
-results_ft = []
-with open("ft-results.jsonl", "r") as f:
+client = OpenAI()
+
+# Load test data from JSONL
+test_data = []
+with open("cell_cycle_test.jsonl", "r") as f:
     for line in f:
-        results_ft.append(json.loads(line))
+        test_data.append(json.loads(line))
 
-ratings_ft = [result['rating'] for result in results_w_scores if result['type'] == 'Open']
+def process_example(example, model):
+    response = client.chat.completions.create(
+        model=model,
+        messages=example["messages"],
+        store=True
+    )
+    predicted_answer = response.choices[0].message.content.strip()
 
-rating_counts_ft = Counter(ratings_ft)
+    # Extract example ID
+    example_id = int(re.search(r'\[(\d+)\]', example["messages"][-1]["content"][0]["text"]).group(1))
+    actual_answer = example["actual_answer"]
 
-bar_width = 0.35
-index = range(len(rating_order))
+    return {
+        "example_id": example_id,
+        "predicted_answer": predicted_answer,
+        "actual_answer": actual_answer
+    }
 
-fig, ax = plt.subplots()
-bar1 = ax.bar(index, [rating_counts_ft.get(rating, 0) for rating in rating_order], bar_width, label='FT GPT-4o')
+def run_inference(model_name, output_file):
+    results = []
+    with ThreadPoolExecutor() as executor:
+        futures = {executor.submit(process_example, example, model_name): example for example in test_data}
+        for future in tqdm(as_completed(futures), total=len(futures)):
+            results.append(future.result())
 
-ax.set_xlabel('Ratings')
-ax.set_ylabel('Count')
-ax.set_title('Ratings Distribution')
-ax.set_xticks([i + bar_width / 2 for i in index])
-ax.set_xticklabels(rating_order)
-ax.legend()
+    with open(output_file, "w") as f:
+        for result in results:
+            json.dump(result, f)
+            f.write("\n")
 
-plt.show()
+if __name__ == "__main__":
+    # Fine-tuned model inference
+    run_inference("ft:gpt-4o-2024-08-06:", "ft_results.jsonl")
+
+    # Base model inference
+    run_inference("gpt-4o", "base_results.jsonl")
